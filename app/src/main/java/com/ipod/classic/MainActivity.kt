@@ -31,6 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size as GSize
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -280,13 +283,14 @@ fun IPodUi(ip: Ipod) {
             Modifier.systemBarsPadding().padding(12.dp).widthIn(max = 380.dp).fillMaxWidth().aspectRatio(.6f)
                 .shadow(24.dp, RoundedCornerShape(28.dp)).clip(RoundedCornerShape(28.dp))
                 .background(Brush.linearGradient(listOf(Color(0xFFFBFBFC), Color(0xFFD4D5D9), Color(0xFFF2F2F4), Color(0xFFBCBDC2))))
-                .padding(horizontal = 22.dp, vertical = 24.dp),
+                .metal().border(3.dp, Brush.linearGradient(listOf(Color(0xFFD8D9DC), Color(0xFF8D8E93), Color(0xFFEDEDEF), Color(0xFF6E7076))), RoundedCornerShape(28.dp))
+                .padding(3.dp).border(1.dp, Color(0x99FFFFFF), RoundedCornerShape(25.dp)).padding(horizontal = 19.dp, vertical = 21.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(Modifier.fillMaxWidth().aspectRatio(4 / 3f).clip(RoundedCornerShape(8.dp)).background(Color(0xFF111111)).padding(6.dp)) {
+            Box(Modifier.fillMaxWidth().aspectRatio(4 / 3f).clip(RoundedCornerShape(8.dp)).background(Brush.verticalGradient(listOf(Color(0xFF050505), Color(0xFF1D1D1F)))).border(1.dp, Color(0xFF333333), RoundedCornerShape(8.dp)).padding(6.dp)) {
                 Column(Modifier.fillMaxSize().clip(RoundedCornerShape(2.dp)).background(Color.White)) {
                     Row(
-                        Modifier.fillMaxWidth().height(24.dp).background(Brush.verticalGradient(listOf(Color(0xFFFAFBFC), Color(0xFFDFE5EC), Color(0xFFB3BEC9), Color(0xFFCDD6DF)))).padding(horizontal = 6.dp),
+                        Modifier.fillMaxWidth().height(24.dp).background(Brush.verticalGradient(0f to Color(0xFFFAFBFC), .48f to Color(0xFFDFE5EC), .52f to Color(0xFFB3BEC9), 1f to Color(0xFFCDD6DF))).drawBehind { drawRect(Color(0xFF7B8794), Offset(0f, size.height - 1f), GSize(size.width, 1f)) }.padding(horizontal = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(if (ip.playing) "▶" else "", fontSize = 11.sp, color = Color.Black)
@@ -303,6 +307,7 @@ fun IPodUi(ip: Ipod) {
                         }, label = "nav"
                     ) { (depth, scr) -> ScreenBody(ip, depth, scr) }
                 }
+                Box(Modifier.matchParentSize().padding(6.dp).glass())
             }
             Spacer(Modifier.weight(1f))
             Wheel(ip, Modifier.fillMaxWidth(.8f))
@@ -332,7 +337,7 @@ fun MenuList(ip: Ipod, s: Scr, sel: Int) {
         LaunchedEffect(sel) { if (sel < off) off = sel else if (sel >= off + 7) off = sel - 6 }
         val scroll by animateDpAsState(rowH * off, spring(stiffness = 450f), label = "scroll")
         val hl by animateDpAsState(rowH * sel, spring(stiffness = 600f), label = "hl")
-        Box(Modifier.offset(y = hl - scroll).fillMaxWidth().height(rowH).background(Brush.verticalGradient(listOf(Color(0xFF8CC3FF), Color(0xFF4A90E2), Color(0xFF1766C8), Color(0xFF2A7AE0)))))
+        Box(Modifier.offset(y = hl - scroll).fillMaxWidth().height(rowH).background(Brush.verticalGradient(0f to Color(0xFF8CC3FF), .48f to Color(0xFF4A90E2), .52f to Color(0xFF1766C8), 1f to Color(0xFF2A7AE0))).drawBehind { drawRect(Color(0x66FFFFFF), size = GSize(size.width, 1.5f)) })
         Column(Modifier.offset(y = -scroll)) {
             its.forEachIndexed { i, x ->
                 val c by animateColorAsState(if (i == sel) Color.White else Color.Black, tween(150), label = "c")
@@ -396,17 +401,17 @@ fun CoverFlow(ip: Ipod, sel: Int) {
     val i = sel.coerceIn(0, al.size - 1)
     val pos by animateFloatAsState(i.toFloat(), spring(dampingRatio = .75f, stiffness = 120f), label = "cf")
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black, Color(0xFF2B2B2B), Color.Black)))) {
-        val sz = maxHeight * .5f
+        val sz = maxHeight * .42f
         al.forEachIndexed { k, a ->
             val d = k - pos
-            if (abs(d) < 4.5f) Cover(ip, a.albumId, Modifier.align(Alignment.Center).offset(y = -maxHeight * .08f).size(sz).zIndex(10f - abs(d)).graphicsLayer {
+            if (abs(d) < 4.5f) Column(Modifier.align(Alignment.Center).offset(y = -maxHeight * .1f).zIndex(10f - abs(d)).graphicsLayer {
                 val ad = min(abs(d), 1f); val side = sign(d)
                 translationX = side * (ad * sz.toPx() * .8f + (abs(d) - ad) * sz.toPx() * .4f)
                 rotationY = -side * ad * 62f
                 cameraDistance = 12f * density
                 scaleX = 1f + .1f * (1f - ad); scaleY = scaleX
                 alpha = (1f - max(abs(d) - 3f, 0f)).coerceIn(0f, 1f)
-            })
+            }) { Cover(ip, a.albumId, Modifier.size(sz)); Reflect(ip, a.albumId, sz) }
         }
         Text(al[i].album + "\n" + al[i].artist, Modifier.align(Alignment.BottomCenter).padding(4.dp), color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 2)
     }
@@ -431,8 +436,14 @@ fun Wheel(ip: Ipod, modifier: Modifier) {
     val view = LocalView.current
     val lab = Color(0xFF8A8B90)
     Box(
-        modifier.aspectRatio(1f).clip(CircleShape)
-            .background(Brush.sweepGradient(listOf(Color(0xFFF4F4F6), Color(0xFFD5D6DA), Color(0xFFFAFAFB), Color(0xFFCBCCD1), Color(0xFFF4F4F6))))
+        modifier.aspectRatio(1f).shadow(6.dp, CircleShape).clip(CircleShape)
+            .background(Brush.sweepGradient(listOf(Color(0xFFF4F4F6), Color(0xFFD5D6DA), Color(0xFFFAFAFB), Color(0xFFCBCCD1), Color(0xFFF4F4F6), Color(0xFFD5D6DA), Color(0xFFFAFAFB), Color(0xFFCBCCD1), Color(0xFFF4F4F6))))
+            .drawBehind {
+                val r = size.minDimension / 2
+                drawCircle(Brush.radialGradient(.52f to Color.Transparent, 1f to Color(0x2A000000), center = center, radius = r))
+                drawCircle(Color(0xA0FFFFFF), r - 2.dp.toPx(), style = Stroke(2.dp.toPx()))
+                drawCircle(Color(0x28000000), r * .62f, style = Stroke(1.dp.toPx()))
+            }
             .border(1.dp, Color(0xFF9B9CA1), CircleShape)
             .pointerInput(Unit) {
                 detectTapGestures { o ->
@@ -460,12 +471,46 @@ fun Wheel(ip: Ipod, modifier: Modifier) {
         var pressed by remember { mutableStateOf(false) }
         val sc by animateFloatAsState(if (pressed) .93f else 1f, tween(80), label = "press")
         Box(
-            Modifier.align(Alignment.Center).fillMaxSize(.34f).graphicsLayer { scaleX = sc; scaleY = sc }.clip(CircleShape)
-                .background(Brush.radialGradient(listOf(Color.White, Color(0xFFECECEF), Color(0xFFC9CACF))))
+            Modifier.align(Alignment.Center).fillMaxSize(.34f).graphicsLayer { scaleX = sc; scaleY = sc }.drawBehind { val r = size.minDimension / 2; drawCircle(Color(0xFF9D9EA3), r + 5.dp.toPx()); drawCircle(Color(0xFFE7E7EA), r + 4.dp.toPx()) }.clip(CircleShape)
+                .drawBehind { drawCircle(Brush.radialGradient(0f to Color.White, .45f to Color(0xFFECECEF), 1f to Color(0xFFC9CACF), center = Offset(size.width * .38f, size.height * .28f), radius = size.width * .8f)) }
                 .border(1.dp, Color(0xFFA1A2A7), CircleShape)
                 .pointerInput(Unit) {
                     detectTapGestures(onPress = { pressed = true; tryAwaitRelease(); pressed = false }, onLongPress = { ip.hold() }, onTap = { view.playSoundEffect(SoundEffectConstants.CLICK); ip.select() })
                 }
         )
+    }
+}
+
+/** Brushed aluminium: fine vertical grain + speckle noise */
+fun Modifier.metal(): Modifier = drawWithCache {
+    val rnd = java.util.Random(7)
+    val pts = List(900) { Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height) to rnd.nextFloat() }
+    onDrawBehind {
+        var x = 0f
+        while (x < size.width) { drawLine(Color(0x0D000000), Offset(x, 0f), Offset(x, size.height), 1f); x += 3f }
+        pts.forEach { (o, a) -> drawCircle(Color.Black.copy(alpha = .06f * a), 1f, o) }
+    }
+}
+
+/** LCD glass: diagonal glare, scanline grid, inner edge shadow */
+fun Modifier.glass(): Modifier = drawBehind {
+    drawRect(Brush.linearGradient(0f to Color(0x44FFFFFF), .36f to Color.Transparent, start = Offset.Zero, end = Offset(size.width, size.height)))
+    var y = 0f
+    while (y < size.height) { drawRect(Color(0x0A000000), Offset(0f, y), GSize(size.width, 1f)); y += 3f }
+    drawRect(Color(0x33000000), style = Stroke(3f))
+}
+
+/** Mirror reflection under a Cover Flow cover, fading out downwards */
+@Composable
+fun Reflect(ip: Ipod, id: Long, sz: Dp) {
+    val bmp by produceState<ImageBitmap?>(null, id) { value = withContext(Dispatchers.IO) { ip.art(id) } }
+    Box(
+        Modifier.padding(top = 2.dp).size(sz, sz * .5f)
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }.clipToBounds()
+            .drawWithContent { drawContent(); drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .5f), Color.Transparent)), blendMode = BlendMode.DstIn) }
+    ) {
+        val m = Modifier.wrapContentHeight(Alignment.Top, unbounded = true).fillMaxWidth().height(sz).graphicsLayer { scaleY = -1f }
+        val b = bmp
+        if (b != null) Image(b, null, m, contentScale = ContentScale.Crop) else Box(m.background(Color(0xFF556070)))
     }
 }
